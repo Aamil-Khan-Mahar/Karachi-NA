@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data & Graph Showcase</title>
+    <style>
+      body {
+        font-family: Montserrat, sans-serif;
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+        background-color: #121212;
+        color: #f1f1f1;
+      }
+
+      .container {
+        width: 95%;
+        justify-content: center;
+        margin: 0;
+        padding: 20px;
+      }
+
+      header {
+        background: #1e1e1e;
+        padding: 20px;
+        text-align: center;
+        width: 100%;
+      }
+
+      header h1,
+      header p {
+        color: #ffffff;
+      }
+
+      .tabs {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        width: 100%;
+        margin: 20px 0;
+      }
+
+      .tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        background: #2b2b2b;
+        color: #ddd;
+        border-radius: 5px;
+        margin: 5px;
+        transition: background 0.3s;
+      }
+
+      .tab:hover {
+        background: #444;
+      }
+
+      .tab.active {
+        background: #ff0000;
+        color: white;
+      }
+
+      .subtabs {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        margin: 15px 0;
+      }
+
+      .subtab {
+        padding: 8px 16px;
+        margin: 0 10px;
+        cursor: pointer;
+        background: #333;
+        color: #ccc;
+        border-radius: 4px;
+        transition: background 0.3s;
+      }
+
+      .subtab:hover {
+        background: #555;
+      }
+
+      .subtab.active {
+        background: #ff0000;
+        color: rgb(255, 255, 255);
+      }
+
+      .content-section {
+        padding: 20px;
+        border: 1px solid #333;
+        border-radius: 5px;
+        width: 100%;
+        background-color: #1a1a1a;
+      }
+
+      .graph-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+      }
+
+      .graph-container img {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #222;
+      }
+
+      .search-container {
+        width: 100%;
+        margin: 15px 0;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: 1px solid #444;
+        background-color: #2a2a2a;
+        color: #f1f1f1;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 80%;
+        background-color: #1c1c1c;
+        color: #f1f1f1;
+      }
+
+      th,
+      td {
+        padding: 8px;
+        text-align: center;
+        border: 1px solid #333;
+      }
+
+      th {
+        background-color: #2a2a2a;
+        cursor: pointer;
+      }
+
+      th:hover {
+        background-color: #3a3a3a;
+      }
+
+      .sort-indicator::after {
+        content: "↕";
+        margin-left: 5px;
+        color: #999;
+      }
+
+      .sort-asc::after {
+        content: "↑";
+        margin-left: 5px;
+        color: #00ffcc;
+      }
+
+      .sort-desc::after {
+        content: "↓";
+        margin-left: 5px;
+        color: #00ffcc;
+      }
+
+      .table-wrapper {
+        overflow-x: auto;
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .column-toggles {
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #ccc;
+      }
+      .column-toggles input {
+        margin-right: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Data and Graph Showcase</h1>
+        <p>Select an NA and view its graphs or dataset</p>
+      </header>
+
+      <!-- Corrected Tabs -->
+      <div class="tabs" id="na-tabs">
+        <div class="tab active" data-na="NA232">NA232</div>
+        <div class="tab" data-na="NA233">NA233</div>
+        <div class="tab" data-na="NA241">NA241</div>
+        <div class="tab" data-na="NA242">NA242</div>
+        <div class="tab" data-na="NA244">NA244</div>
+      </div>
+
+      <!-- Corrected Subtabs -->
+      <div class="subtabs" id="content-subtabs">
+        <div class="subtab active" data-content="graphs">Graphs</div>
+        <div class="subtab" data-content="dataset">Dataset</div>
+      </div>
+
+      <!-- Single Dynamic Content Area -->
+      <div id="current-content" class="content-section active">
+        <p>Loading content...</p>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const naTabs = document.querySelectorAll("#na-tabs .tab");
+        const contentSubtabs = document.querySelectorAll(
+          "#content-subtabs .subtab"
+        );
+        const currentContent = document.getElementById("current-content");
+
+        let currentNA = "NA232";
+        let currentContentType = "graphs";
+
+        function activateTab(tabs, activeClass, clickedTab, callback) {
+          tabs.forEach((tab) => tab.classList.remove(activeClass));
+          clickedTab.classList.add(activeClass);
+          callback();
+        }
+
+        naTabs.forEach((tab) => {
+          tab.addEventListener("click", () => {
+            currentNA = tab.getAttribute("data-na");
+            activateTab(naTabs, "active", tab, loadContent);
+          });
+        });
+
+        contentSubtabs.forEach((subtab) => {
+          subtab.addEventListener("click", () => {
+            currentContentType = subtab.getAttribute("data-content");
+            activateTab(contentSubtabs, "active", subtab, loadContent);
+          });
+        });
+
+        function loadContent() {
+          if (currentContentType === "graphs") {
+            loadAllGraphs(currentNA);
+          } else if (currentContentType === "dataset") {
+            loadDataset(currentNA);
+          }
+        }
+
+        async function loadAllGraphs(na) {
+          currentContent.innerHTML = `<h2>${na} Graphs</h2><div class="graph-container" id="graphs-container"><p>Loading graphs...</p></div>`;
+          const graphsContainer = document.getElementById("graphs-container");
+          graphsContainer.innerHTML = "";
+
+          for (let i = 1; i <= 7; i++) {
+            const img = document.createElement("img");
+            img.src = `./${na}/Graphs/figure_${i}.png`;
+            img.alt = `${na} Figure ${i}`;
+            img.onerror = function () {
+              this.remove();
+            };
+            graphsContainer.appendChild(img);
+          }
+        }
+
+        function parseCSV(text) {
+          const lines = text.trim().split("\n");
+          const headers = lines[0].split(",").map((header) => header.trim());
+          const rows = lines
+            .slice(1)
+            .map((line) => line.split(",").map((cell) => cell.trim()));
+          return { headers, rows };
+        }
+
+        async function loadDataset(na) {
+          currentContent.innerHTML = `<h2>${na} Dataset</h2><p>Loading data from ${na}/Data/${na}.csv...</p>`;
+          try {
+            const response = await fetch(`./${na}/Data/${na}.csv`);
+            if (!response.ok)
+              throw new Error(`Failed to load CSV: ${response.statusText}`);
+            const text = await response.text();
+            const csvData = parseCSV(text);
+            // Build column toggles
+            let toggleHTML = `<div class="column-toggles"><strong>Toggle Columns:</strong><br>`;
+            csvData.headers.forEach((header, i) => {
+              toggleHTML += `
+                <label style="margin-right:10px;">
+                <input type="checkbox" class="column-toggle" data-index="${i}" checked>
+                ${header}
+                </label>`;
+            });
+            toggleHTML += `</div>`;
+
+            let tableHTML = `
+                ${toggleHTML}
+                <div class="search-container">
+                    <input type="text" id="search-input" class="search-input" placeholder="Search in table...">
+                </div>
+                <div class="table-wrapper">
+                <table id="data-table">
+                    <thead>
+                    <tr>${csvData.headers.map((h, i) => `<th data-index="${i}" class="sort-indicator">${h}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                    ${csvData.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+                    </tbody>
+                </table>
+                </div>
+            `;
+
+            currentContent.innerHTML = `<h2>${na} Dataset</h2>${tableHTML}`;
+            // Handle column toggle
+            document.querySelectorAll('.column-toggle').forEach(toggle => {
+            toggle.addEventListener('change', function () {
+                const colIndex = parseInt(this.dataset.index);
+                const isVisible = this.checked;
+
+                // Toggle <th>
+                document.querySelectorAll(`#data-table th[data-index="${colIndex}"]`).forEach(th => {
+                th.style.display = isVisible ? '' : 'none';
+                });
+
+                // Toggle <td>
+                document.querySelectorAll(`#data-table tbody tr`).forEach(row => {
+                if (row.children[colIndex]) {
+                    row.children[colIndex].style.display = isVisible ? '' : 'none';
+                }
+                });
+            });
+            });
+
+            // Sorting logic
+            let sortColumn = -1;
+            let sortDirection = "asc";
+
+            document.querySelectorAll("#data-table th").forEach((th) => {
+              th.addEventListener("click", () => {
+                const columnIndex = parseInt(th.getAttribute("data-index"));
+                if (sortColumn === columnIndex) {
+                  sortDirection = sortDirection === "asc" ? "desc" : "asc";
+                } else {
+                  sortColumn = columnIndex;
+                  sortDirection = "asc";
+                }
+
+                document
+                  .querySelectorAll("#data-table th")
+                  .forEach((header) => (header.className = "sort-indicator"));
+                th.classList.add(
+                  sortDirection === "asc" ? "sort-asc" : "sort-desc"
+                );
+
+                const rows = Array.from(
+                  document.querySelectorAll("#data-table tbody tr")
+                );
+                rows.sort((a, b) => {
+                  const valA = a.children[columnIndex].textContent;
+                  const valB = b.children[columnIndex].textContent;
+                  const numA = parseFloat(valA);
+                  const numB = parseFloat(valB);
+                  if (!isNaN(numA) && !isNaN(numB)) {
+                    return sortDirection === "asc" ? numA - numB : numB - numA;
+                  }
+                  return sortDirection === "asc"
+                    ? valA.localeCompare(valB)
+                    : valB.localeCompare(valA);
+                });
+                const tbody = document.querySelector("#data-table tbody");
+                rows.forEach((row) => tbody.appendChild(row));
+              });
+            });
+
+            document
+              .getElementById("search-input")
+              .addEventListener("input", function () {
+                const searchText = this.value.toLowerCase();
+                document
+                  .querySelectorAll("#data-table tbody tr")
+                  .forEach((row) => {
+                    const rowText = row.textContent.toLowerCase();
+                    row.style.display = rowText.includes(searchText)
+                      ? ""
+                      : "none";
+                  });
+              });
+          } catch (error) {
+            currentContent.innerHTML = `<p>Error loading dataset: ${error.message}</p>`;
+          }
+        }
+
+        // Load initial content
+        loadContent();
+      });
+    </script>
+  </body>
+</html>
