@@ -179,13 +179,80 @@
       .column-toggles input {
         margin-right: 4px;
       }
+
+      .card-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 10px 0;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .card {
+        display: flex;
+        justify-content: space-between;
+        background-color: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 15px;
+        color: #f1f1f1;
+        flex-wrap: wrap;
+      }
+
+      .card-full {
+        width: 100%;
+      }
+
+      .card-half-l {
+        flex: 1;
+        padding: 10px;
+        box-sizing: border-box;
+        text-align: left;
+      }
+
+      .card-half-r {
+        flex: 1;
+        padding: 10px;
+        box-sizing: border-box;
+        text-align: left;
+      }
+
+
+      .card-half h4 {
+        margin-bottom: 10px;
+        color: #ff0000;
+
+      }
+
+      .card-row {
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .filter-bar input,
+      .filter-bar select {
+        padding: 8px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid #444;
+        background-color: #2a2a2a;
+        color: #f1f1f1;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <header>
-        <h1>Data and Graph Showcase</h1>
-        <p>Select an NA and view its graphs or dataset</p>
+        <h1>Karachi National Assembly Constituencies – 2024 General Elections Analysis</h1>
+        <p>Select an NA and view its graphs, dataset or polling station cards</p>
       </header>
 
       <!-- Corrected Tabs -->
@@ -201,6 +268,7 @@
       <div class="subtabs" id="content-subtabs">
         <div class="subtab active" data-content="graphs">Graphs</div>
         <div class="subtab" data-content="dataset">Dataset</div>
+        <div class="subtab" data-content="Cards">Polling Station Cards</div>
       </div>
 
       <!-- Single Dynamic Content Area -->
@@ -245,6 +313,8 @@
             loadAllGraphs(currentNA);
           } else if (currentContentType === "dataset") {
             loadDataset(currentNA);
+          } else if (currentContentType === "Cards") {
+            loadCards(currentNA); // ← This enables the PS cards view
           }
         }
 
@@ -300,10 +370,22 @@
                 <div class="table-wrapper">
                 <table id="data-table">
                     <thead>
-                    <tr>${csvData.headers.map((h, i) => `<th data-index="${i}" class="sort-indicator">${h}</th>`).join('')}</tr>
+                    <tr>${csvData.headers
+                      .map(
+                        (h, i) =>
+                          `<th data-index="${i}" class="sort-indicator">${h}</th>`
+                      )
+                      .join("")}</tr>
                     </thead>
                     <tbody>
-                    ${csvData.rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+                    ${csvData.rows
+                      .map(
+                        (row) =>
+                          `<tr>${row
+                            .map((cell) => `<td>${cell}</td>`)
+                            .join("")}</tr>`
+                      )
+                      .join("")}
                     </tbody>
                 </table>
                 </div>
@@ -311,23 +393,29 @@
 
             currentContent.innerHTML = `<h2>${na} Dataset</h2>${tableHTML}`;
             // Handle column toggle
-            document.querySelectorAll('.column-toggle').forEach(toggle => {
-            toggle.addEventListener('change', function () {
+            document.querySelectorAll(".column-toggle").forEach((toggle) => {
+              toggle.addEventListener("change", function () {
                 const colIndex = parseInt(this.dataset.index);
                 const isVisible = this.checked;
 
                 // Toggle <th>
-                document.querySelectorAll(`#data-table th[data-index="${colIndex}"]`).forEach(th => {
-                th.style.display = isVisible ? '' : 'none';
-                });
+                document
+                  .querySelectorAll(`#data-table th[data-index="${colIndex}"]`)
+                  .forEach((th) => {
+                    th.style.display = isVisible ? "" : "none";
+                  });
 
                 // Toggle <td>
-                document.querySelectorAll(`#data-table tbody tr`).forEach(row => {
-                if (row.children[colIndex]) {
-                    row.children[colIndex].style.display = isVisible ? '' : 'none';
-                }
-                });
-            });
+                document
+                  .querySelectorAll(`#data-table tbody tr`)
+                  .forEach((row) => {
+                    if (row.children[colIndex]) {
+                      row.children[colIndex].style.display = isVisible
+                        ? ""
+                        : "none";
+                    }
+                  });
+              });
             });
 
             // Sorting logic
@@ -386,6 +474,240 @@
               });
           } catch (error) {
             currentContent.innerHTML = `<p>Error loading dataset: ${error.message}</p>`;
+          }
+        }
+        
+        async function loadCards(na) {
+          currentContent.innerHTML = `<h2>${na} PS Cards</h2>
+            <div class="filter-bar">
+                <input type="text" id="filter-psno" placeholder="Filter by PSNO..." />
+                <select id="filter-winner">
+                    <option value="">Filter by WINNER_ECP</option>
+                </select>
+                <select id="sort-cards">
+                    <option value="">Sort by...</option>
+                    <option value="psno">PSNO (NA)</option>
+                    <option value="marginPTI">Vote Margin (PTI)</option>
+                    <option value="marginECP">Vote Margin (ECP)</option>
+                    <option value="turnout">Turnout % (ECP)</option>
+                </select>
+                <select id="filter-match">
+                    <option value="">Filter by Match</option>
+                    <option value="match">PTI Match ECP (Green)</option>
+                    <option value="mismatch">Mismatch (Red)</option>
+                </select>
+            </div>
+            <div id="ps-cards" class="card-container"></div>
+            `;
+
+          try {
+            const response = await fetch(`./${na}/Data/${na}.csv`);
+            if (!response.ok)
+              throw new Error(`Failed to load CSV: ${response.statusText}`);
+            const text = await response.text();
+            const { headers, rows } = parseCSV(text);
+
+            const container = document.getElementById("ps-cards");
+            const winnerSet = new Set();
+
+            // 1. Determine unique candidate names
+            const winnerNames = rows.map(
+              (r) => r[headers.indexOf("WINNER_ECP")]
+            );
+            const uniqueNames = Array.from(new Set(winnerNames));
+            const ptiName =
+              uniqueNames.find((n) => n.includes("(PTI)")) || "PTI";
+            const oppName =
+              uniqueNames.find((n) => !n.includes("(PTI)")) || "OPPONENT";
+
+            // Helper function to parse integer
+            function toInt(val) {
+              return val && !isNaN(val) ? parseInt(val) : NaN;
+            }
+
+            // Helper function for absolute value
+            function abs(number) {
+              return number >= 0 ? number : -1 * number;
+            }
+
+            function createCard(row) {
+              const data = Object.fromEntries(
+                headers.map((h, i) => [h, row[i]])
+              );
+
+              const oppVotesPTI = toInt(data.OPP_VOTES_PTI);
+              const ptiVotesPTI = toInt(data.PTI_VOTES_PTI);
+              const oppVotesECP = toInt(data.OPP_VOTES_ECP);
+              const ptiVotesECP = toInt(data.PTI_VOTES_ECP);
+              const registered = toInt(data["PS_REGISTERED_VOTERS"]);
+              const turnout = toInt(data.TURNOUT_NA_ECP);
+              const turnoutPTI = toInt(data.TURNOUT_NA_PTI);
+
+              const marginPTI =
+                !isNaN(ptiVotesPTI) && !isNaN(oppVotesPTI)
+                  ? abs(ptiVotesPTI - oppVotesPTI)
+                  : "N/A";
+              const marginECP =
+                !isNaN(ptiVotesECP) && !isNaN(oppVotesECP)
+                  ? abs(ptiVotesECP - oppVotesECP)
+                  : "N/A";
+
+              const turnoutPercent =
+                !isNaN(turnout) && !isNaN(registered)
+                  ? ((turnout / registered) * 100).toFixed(1) + "%"
+                  : "N/A";
+
+              const turnoutPercentPTI =
+                !isNaN(turnoutPTI) && !isNaN(registered)
+                  ? ((turnoutPTI / registered) * 100).toFixed(1) + "%"
+                  : "N/A";
+
+              // 2. Determine Winner based on PTI Data
+              const winnerPTI =
+                !isNaN(ptiVotesPTI) && !isNaN(oppVotesPTI)
+                  ? ptiVotesPTI > oppVotesPTI
+                    ? ptiName
+                    : oppName
+                  : "N/A";
+
+              const cardColor =
+                winnerPTI === data.WINNER_ECP ? "#1c3d2e" : "#3d1c1c"; // green if both match, red otherwise
+
+              winnerSet.add(data.WINNER_ECP);
+
+             return `
+                <div class="card" style="background-color:${cardColor};">
+                    <div class="card-full">
+                    <div class="card-row" style="font-size: 18px; font-weight: bold; margin-bottom: 12px; text-align: center;">
+                        PSNO (NA): ${data.PSNO_NA_ECP} &nbsp; | &nbsp; Registered Voters: ${isNaN(registered) ? "N/A" : registered}
+                    </div>
+                    </div>
+
+                    <div class="card-half-l">
+                    <h4>ECP Data</h4>
+                    <div class="card-row">WINNER: ${data.WINNER_ECP}</div>
+                    <div class="card-row">OPP VOTES (ECP): ${data.OPP_VOTES_ECP}</div>
+                    <div class="card-row">PTI VOTES (ECP): ${data.PTI_VOTES_ECP}</div>
+                    <div class="card-row">Vote Margin (ECP): ${marginECP}</div>
+                    <div class="card-row">Turnout (NA ECP): ${turnout}</div>
+                    <div class="card-row">Turnout% (NA ECP): ${turnoutPercent}</div>
+                    </div>
+
+                    <div class="card-half-r">
+                    <h4>PTI Data</h4>
+                    <div class="card-row">WINNER (PTI): ${winnerPTI}</div>
+                    <div class="card-row">OPP VOTES (PTI): ${data.OPP_VOTES_PTI}</div>
+                    <div class="card-row">PTI VOTES (PTI): ${data.PTI_VOTES_PTI}</div>
+                    <div class="card-row">Vote Margin (PTI): ${marginPTI}</div>
+                    <div class="card-row">Turnout (NA PTI): ${turnoutPTI}</div>
+                    <div class="card-row">Turnout% (NA PTI): ${turnoutPercentPTI}</div>
+                    </div>
+                </div>`;}
+
+            function renderFilteredCards() {
+              const filterPS = document
+                .getElementById("filter-psno")
+                .value.toLowerCase();
+              const filterWinner =
+                document.getElementById("filter-winner").value;
+              const sortBy = document.getElementById("sort-cards").value;
+              const matchFilter = document.getElementById("filter-match").value;
+
+              let filteredRows = rows.filter((r) => {
+                const ps = r[headers.indexOf("PSNO_NA_ECP")].toLowerCase();
+                const winner = r[headers.indexOf("WINNER_ECP")];
+                return (
+                  ps.includes(filterPS) &&
+                  (!filterWinner || winner === filterWinner)
+                );
+              });
+
+              // Sort logic
+              if (sortBy) {
+                filteredRows.sort((a, b) => {
+                  const getValue = (row, key) => {
+                    const data = Object.fromEntries(
+                      headers.map((h, i) => [h, row[i]])
+                    );
+                    const ptiVotesPTI = toInt(data.PTI_VOTES_PTI);
+                    const oppVotesPTI = toInt(data.OPP_VOTES_PTI);
+                    const ptiVotesECP = toInt(data.PTI_VOTES_ECP);
+                    const oppVotesECP = toInt(data.OPP_VOTES_ECP);
+                    const turnout = toInt(data.TURNOUT_NA_ECP);
+                    const registered = toInt(data["PS_REGISTERED VOTERS"]);
+                    const psno = toInt(data.PSNO_NA_ECP);
+
+                    if (key === "marginPTI")
+                      return !isNaN(ptiVotesPTI - oppVotesPTI)
+                        ? abs(ptiVotesPTI - oppVotesPTI)
+                        : -1;
+                    if (key === "marginECP")
+                      return !isNaN(ptiVotesECP - oppVotesECP)
+                        ? abs(ptiVotesECP - oppVotesECP)
+                        : -1;
+                    if (key === "turnout")
+                      return !isNaN(turnout) && !isNaN(registered)
+                        ? turnout / registered
+                        : -1;
+                    if (key === "psno") return !isNaN(psno) ? psno : -1;
+
+                    return -1;
+                  };
+
+                  return getValue(a, sortBy) - getValue(b, sortBy);
+                });
+              }
+
+              // Match filter
+              if (matchFilter) {
+                filteredRows = filteredRows.filter((row) => {
+                  const data = Object.fromEntries(
+                    headers.map((h, i) => [h, row[i]])
+                  );
+                  const ptiVotesPTI = toInt(data.PTI_VOTES_PTI);
+                  const oppVotesPTI = toInt(data.OPP_VOTES_PTI);
+                  const winnerPTI =
+                    !isNaN(ptiVotesPTI) && !isNaN(oppVotesPTI)
+                      ? ptiVotesPTI > oppVotesPTI
+                        ? ptiName
+                        : oppName
+                      : "N/A";
+                  const match = winnerPTI === data.WINNER_ECP;
+                  return matchFilter === "match" ? match : !match;
+                });
+              }
+
+              container.innerHTML = filteredRows.map(createCard).join("");
+            }
+
+            rows.forEach((row) => (container.innerHTML += createCard(row)));
+
+            const winnerDropdown = document.getElementById("filter-winner");
+            Array.from(winnerSet)
+              .sort()
+              .forEach((name) => {
+                const option = document.createElement("option");
+                option.value = name;
+                option.textContent = name;
+                winnerDropdown.appendChild(option);
+              });
+
+            document
+              .getElementById("filter-psno")
+              .addEventListener("input", renderFilteredCards);
+            winnerDropdown.addEventListener("change", renderFilteredCards);
+
+            document
+              .getElementById("sort-cards")
+              .addEventListener("change", renderFilteredCards);
+
+            document
+              .getElementById("filter-match")
+              .addEventListener("change", renderFilteredCards);
+          } catch (error) {
+            document.getElementById(
+              "ps-cards"
+            ).innerHTML = `<p>Error loading cards: ${error.message}</p>`;
           }
         }
 
